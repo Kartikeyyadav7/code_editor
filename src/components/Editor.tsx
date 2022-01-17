@@ -1,13 +1,38 @@
-import React from 'react';
-import Editor, { DiffEditor, useMonaco, loader } from '@monaco-editor/react';
+import React, { useState } from 'react';
+import Editor from '@monaco-editor/react';
+import files from '../utils/files';
 
 const MonacoEditor = () => {
+  const [fileName, setFileName] = useState('script.js');
+  const file = files[fileName];
   return (
-    <Editor
-      height="90vh"
-      defaultLanguage="javascript"
-      defaultValue="// some comment"
-    />
+    <>
+      <button
+        disabled={fileName === 'script.js'}
+        onClick={() => setFileName('script.js')}
+      >
+        script.js
+      </button>
+      <button
+        disabled={fileName === 'style.css'}
+        onClick={() => setFileName('style.css')}
+      >
+        style.css
+      </button>
+      <button
+        disabled={fileName === 'index.html'}
+        onClick={() => setFileName('index.html')}
+      >
+        index.html
+      </button>
+      <Editor
+        height="80vh"
+        theme="vs-dark"
+        path={file.name}
+        defaultLanguage={file.language}
+        defaultValue={file.value}
+      />
+    </>
   );
 };
 
