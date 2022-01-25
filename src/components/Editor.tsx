@@ -1,72 +1,87 @@
 import React, { useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
-import files from '../utils/files';
 
 const MonacoEditor = () => {
-  const [fileName, setFileName] = useState('script.js');
-  const [number, setNumber] = useState(1);
-  const file = files[fileName];
+  const [folderName, setFolderName] = useState([]);
 
-  let res;
-  const fetchHtml = async () => {
-    res = await fetch('http://localhost:5000/');
-    const text = await res.text();
-    console.log(text);
-    setFileName(text);
-  };
-  // const fetchCss = async () => {
-  //   const res = await fetch('http://localhost:5000/style.css');
-  //   const text = await res.text();
-  //   console.log(text);
-  // };
+  const [pathName, setPathName] = useState();
+  const [langName, setLangName] = useState();
+  const [valueName, setValueName] = useState();
 
-  // const fetchJS = async () => {
-  //   const res = await fetch('http://localhost:5000/script.js');
-  //   const text = await res.text();
-  //   console.log(text);
-  // };
-  const handleClick = () => {
-    setNumber(number + 1);
+  const newWs = new WebSocket('ws://localhost:8800');
+  const webSocketConnection = () => {
+    if (newWs) {
+      newWs.onopen = (event) => {
+        newWs.send(JSON.stringify({ type: 'get-folder-column' }));
+      };
+
+      newWs.onmessage = function (event) {
+        const json = JSON.parse(event.data);
+        try {
+          if (json.type == 'update-folder-column') {
+            setFolderName(json.contents);
+          }
+        } catch (err) {
+          console.log(err);
+        }
+      };
+    }
   };
 
   useEffect(() => {
-    fetchHtml();
-    // fetchCss();
-    // fetchJS();
-  }, [number]);
+    webSocketConnection();
+  }, []);
+
+  function handleEditorChange(value: any, event: any) {
+    console.log('here is the current model value:', value);
+    console.log('language', pathName);
+    newWs.send(
+      JSON.stringify({
+        type: 'update-file',
+        content: {
+          fileName: pathName,
+          fileContent: value,
+        },
+      }),
+    );
+  }
+
+  const onBtnClick = (name: any) => {
+    setPathName(name.fileName);
+    setLangName(
+      name.fileName.split('.')[1] === 'js'
+        ? 'javascript'
+        : name.fileName.split('.')[1],
+    );
+
+    setValueName(name.content);
+  };
 
   return (
     <>
-      {/* <button
-        disabled={fileName === 'script.js'}
-        onClick={() => setFileName('script.js')}
-      >
-        script.js
-      </button>
-      <button
-        disabled={fileName === 'style.css'}
-        onClick={() => setFileName('style.css')}
-      >
-        style.css
-      </button>
-      <button
-        disabled={fileName === 'index.html'}
-        onClick={() => setFileName('index.html')}
-      >
-        index.html
-      </button> */}
-      <div>{number}</div>
-      <button onClick={handleClick}>+</button>
+      {folderName.map((name: any) => (
+        <button
+          key={name.fileName}
+          disabled={pathName === name.fileName}
+          onClick={() => onBtnClick(name)}
+        >
+          {name.fileName}
+        </button>
+      ))}
       <Editor
         height="80vh"
         theme="vs-dark"
-        // path="file:///E:/Learning/react-snowpack-typescript/src/project/file.html"
-        // path={res.url}
-        // defaultLanguage={file.language}
-        // defaultValue={file.value}
-        defaultLanguage="html"
-        defaultValue={fileName}
+        path={pathName}
+        defaultLanguage={langName}
+        defaultValue={valueName}
+        onChange={handleEditorChange}
       />
+
+      <iframe
+        src="http://localhost:5500/code/"
+        width="400px"
+        height="400px"
+      ></iframe>
     </>
   );
 };
