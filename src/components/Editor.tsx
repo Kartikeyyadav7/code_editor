@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Editor from '@monaco-editor/react';
+import { XTerm } from 'xterm-for-react';
+import { io } from 'socket.io-client';
 
 const MonacoEditor = () => {
   const [folderName, setFolderName] = useState([]);
@@ -7,6 +9,8 @@ const MonacoEditor = () => {
   const [pathName, setPathName] = useState();
   const [langName, setLangName] = useState();
   const [valueName, setValueName] = useState();
+
+  const xtermRef = useRef<any>(null);
 
   const newWs = new WebSocket('ws://localhost:8800');
   const webSocketConnection = () => {
@@ -27,9 +31,42 @@ const MonacoEditor = () => {
       };
     }
   };
+  const serverAddress = 'http://localhost:8800';
+
+  const connectToSocket = (serverAddress: any) => {
+    return new Promise((res) => {
+      const socket = io(serverAddress);
+      res(socket);
+    });
+  };
+
+  const start = (serverAddress: any) => {
+    connectToSocket(serverAddress)
+      .then((socket: any) => {
+        console.log('The socket is getting first');
+        socket.on('connect', () => {
+          console.log('Id', socket.id);
+          console.log('Now the terminal is instantiated');
+
+          console.log('Creating a new terminal now');
+
+          socket.on('output', (data: any) => {
+            console.log('Now I am getting data from pty', data);
+            // When there is data from PTY on server, print that on Terminal.
+            xtermRef.current?.terminal.write(data);
+          });
+          xtermRef.current?.terminal.onData((data: any) => {
+            console.log('Now data is being emitted', data);
+            socket.emit('input', data);
+          });
+        });
+      })
+      .catch((err) => console.log('Error occured while connecting to socket'));
+  };
 
   useEffect(() => {
     webSocketConnection();
+    start(serverAddress);
   }, []);
 
   function handleEditorChange(value: any, event: any) {
@@ -82,6 +119,7 @@ const MonacoEditor = () => {
         width="400px"
         height="400px"
       ></iframe>
+      <XTerm ref={xtermRef} />
     </>
   );
 };
