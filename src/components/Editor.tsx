@@ -55,6 +55,9 @@ const MonacoEditor = () => {
             // When there is data from PTY on server, print that on Terminal.
             xtermRef.current?.terminal.write(data);
           });
+
+          socket.emit('message', `lite-server\r`);
+
           xtermRef.current?.terminal.onData((data: any) => {
             console.log('Now data is being emitted', data);
             socket.emit('input', data);
@@ -115,7 +118,9 @@ const MonacoEditor = () => {
       />
 
       <iframe
-        src="http://localhost:5500/code/"
+        src="http://localhost:3000"
+        onLoad={() => console.log('loaded')}
+        onError={() => console.log('error')}
         width="400px"
         height="400px"
       ></iframe>
