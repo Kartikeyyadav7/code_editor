@@ -10,6 +10,9 @@ const MonacoEditor = () => {
   const [langName, setLangName] = useState();
   const [valueName, setValueName] = useState();
 
+  const [createdFileName, setCreatedFileName] = useState('');
+  const [createdFolderName, setCreatedFolderName] = useState('');
+
   const xtermRef = useRef<any>(null);
 
   const newWs = new WebSocket('ws://localhost:8800');
@@ -70,7 +73,7 @@ const MonacoEditor = () => {
   useEffect(() => {
     webSocketConnection();
     start(serverAddress);
-  }, []);
+  }, [folderName]);
 
   function handleEditorChange(value: any, event: any) {
     console.log('here is the current model value:', value);
@@ -85,6 +88,30 @@ const MonacoEditor = () => {
       }),
     );
   }
+
+  const addFile = () => {
+    newWs.send(
+      JSON.stringify({
+        type: 'create-folder-file',
+        content: {
+          fileName: createdFileName,
+          type: 'file',
+        },
+      }),
+    );
+  };
+
+  const addFolder = () => {
+    newWs.send(
+      JSON.stringify({
+        type: 'create-folder-file',
+        content: {
+          fileName: createdFolderName,
+          type: 'folder',
+        },
+      }),
+    );
+  };
 
   const onBtnClick = (name: any) => {
     setPathName(name.fileName);
@@ -108,6 +135,29 @@ const MonacoEditor = () => {
           {name.fileName}
         </button>
       ))}
+      <form>
+        <label>FileName</label>
+        <input
+          type="text"
+          value={createdFileName}
+          onChange={(e) => setCreatedFileName(e.target.value)}
+        />
+        <button type="submit" onClick={addFile}>
+          +
+        </button>
+      </form>
+      <form>
+        <label>FolderName</label>
+        <input
+          type="text"
+          value={createdFolderName}
+          onChange={(e) => setCreatedFolderName(e.target.value)}
+        />
+        <button type="submit" onClick={addFolder}>
+          +
+        </button>
+      </form>
+
       <Editor
         height="80vh"
         theme="vs-dark"
